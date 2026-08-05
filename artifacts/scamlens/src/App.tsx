@@ -106,6 +106,8 @@ function ResultCard({ result, onDismiss }: { result: ScanResult; onDismiss?: () 
   </section>;
 }
 
+const DEMO_MESSAGE = 'Bank Alert: Your account will be suspended today. Verify now at secure-account-check.example within 10 minutes or your card will be blocked. Reply STOP to cancel.';
+
 function Scanner({ history, addScan }: { history: ScanResult[]; addScan: (scan: ScanResult) => void }) {
   const [type, setType] = useState<ScanType>('message');
   const [input, setInput] = useState('');
@@ -115,12 +117,19 @@ function Scanner({ history, addScan }: { history: ScanResult[]; addScan: (scan: 
   const [result, setResult] = useState<ScanResult | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const submit = async () => {
-    if (type !== 'image' && !input.trim()) return;
-    if (type === 'image' && !imageName) return;
+  const submit = async (scanType = type, scanInput = input, scanImageName = imageName) => {
+    if (scanType !== 'image' && !scanInput.trim()) return;
+    if (scanType === 'image' && !scanImageName) return;
     setLoading(true); setResult(null);
-    const scan = await analyzeInput(type, type === 'image' ? imageName : input);
+    const scan = await analyzeInput(scanType, scanType === 'image' ? scanImageName : scanInput);
     addScan(scan); setResult(scan); setLoading(false);
+  };
+  const tryDemoMessage = () => {
+    setType('message');
+    setInput(DEMO_MESSAGE);
+    setImageName('');
+    setImagePreview('');
+    void submit('message', DEMO_MESSAGE);
   };
   const chooseType = (next: ScanType) => { setType(next); setInput(''); setImageName(''); setImagePreview(''); setResult(null); };
   const onFile = (file?: File) => {
@@ -141,9 +150,9 @@ function Scanner({ history, addScan }: { history: ScanResult[]; addScan: (scan: 
           {type === 'image' ? <button type="button" onClick={() => fileRef.current?.click()} data-testid="button-upload-image" className="group flex min-h-[260px] w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[hsl(var(--primary)/.3)] bg-[hsl(var(--secondary)/.34)] px-6 text-center transition hover:border-[hsl(var(--primary)/.65)] hover:bg-[hsl(var(--secondary)/.6)]">
             {imagePreview ? <img src={imagePreview} alt="Selected screenshot preview" className="max-h-[210px] rounded-xl object-contain shadow-sm" /> : <><span className="mb-4 grid size-14 place-items-center rounded-2xl bg-card text-[hsl(var(--primary))] shadow-sm transition group-hover:-translate-y-1"><Upload size={23} /></span><strong className="text-sm">Choose a screenshot</strong><span className="mt-1 text-xs text-muted-foreground">PNG, JPG, or WEBP · max 10 MB</span></>}
             {imageName && <span className="mt-3 text-xs font-semibold text-[hsl(var(--primary))]">{imageName}</span>}
-          </button> : <><label htmlFor="scan-input" className="mb-2 block text-sm font-bold">{type === 'message' ? 'What did they send you?' : 'What link feels off?'}</label><textarea id="scan-input" value={input} onChange={(event) => setInput(event.target.value)} data-testid="input-scan-content" placeholder={type === 'message' ? 'Paste the message here…' : 'https://example.com/claim'} className="min-h-[260px] w-full resize-none rounded-2xl border border-input bg-background p-4 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/70 focus:border-[hsl(var(--primary))] focus:ring-4 focus:ring-[hsl(var(--primary)/.1)]" /><p className="mt-2 text-xs text-muted-foreground">Your scan stays on this device in local mode.</p></>}
+           </button> : <><div className="mb-2 flex items-center justify-between gap-3"><label htmlFor="scan-input" className="block text-sm font-bold">{type === 'message' ? 'What did they send you?' : 'What link feels off?'}</label>{type === 'message' && <button type="button" onClick={tryDemoMessage} data-testid="button-demo-message" className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--primary)/.06)] px-2.5 py-1.5 text-[11px] font-extrabold text-[hsl(var(--primary))] transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/.5)] hover:bg-[hsl(var(--primary)/.12)]"><Zap size={13} />Try Demo Message</button>}</div><textarea id="scan-input" value={input} onChange={(event) => setInput(event.target.value)} data-testid="input-scan-content" placeholder={type === 'message' ? 'Paste the message here…' : 'https://example.com/claim'} className="min-h-[260px] w-full resize-none rounded-2xl border border-input bg-background p-4 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/70 focus:border-[hsl(var(--primary))] focus:ring-4 focus:ring-[hsl(var(--primary)/.1)]" /><p className="mt-2 text-xs text-muted-foreground">Your scan stays on this device in local mode.</p></>}
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => onFile(event.target.files?.[0])} data-testid="input-image-file" />
-          <button type="button" onClick={submit} disabled={loading || (type === 'image' ? !imageName : !input.trim())} data-testid="button-run-scan" className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-5 py-3.5 text-sm font-extrabold text-primary-foreground shadow-[0_8px_18px_hsl(var(--primary)/.2)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_24px_hsl(var(--primary)/.28)] disabled:cursor-not-allowed disabled:opacity-50">{loading ? <><span className="size-4 animate-pulse rounded-full bg-current/60" />Reading the details…</> : <><Search size={17} /> Check this {type === 'url' ? 'link' : type === 'image' ? 'screenshot' : 'message'}</>}</button>
+           <button type="button" onClick={() => void submit()} disabled={loading || (type === 'image' ? !imageName : !input.trim())} data-testid="button-run-scan" className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-5 py-3.5 text-sm font-extrabold text-primary-foreground shadow-[0_8px_18px_hsl(var(--primary)/.2)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_24px_hsl(var(--primary)/.28)] disabled:cursor-not-allowed disabled:opacity-50">{loading ? <><span className="size-4 animate-pulse rounded-full bg-current/60" />Reading the details…</> : <><Search size={17} /> Check this {type === 'url' ? 'link' : type === 'image' ? 'screenshot' : 'message'}</>}</button>
         </div>
         {result && <div className="mt-8"><ResultCard result={result} onDismiss={() => setResult(null)} /></div>}
       </div>
