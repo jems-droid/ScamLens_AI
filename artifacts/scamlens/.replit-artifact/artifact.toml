@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ScamLens"
+description = "A modern AI-powered scam detection app that helps everyday users analyze suspicious messages, links, screenshots, and QR codes before they become victims."
+version = "1.0.0"
+id = "artifacts/scamlens"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18693
+
+[services.development]
+run = "pnpm --filter @workspace/scamlens run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/scamlens", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/scamlens/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18693"
+BASE_PATH = "/"
