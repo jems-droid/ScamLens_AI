@@ -1,0 +1,28 @@
+kind = "video"
+previewPath = "/scamlens-video/"
+title = "ScamLens Product Video"
+description = "A short animated product video that shows how ScamLens helps people pause, check suspicious messages and links, and choose a safer next step."
+version = "1.0.0"
+id = "artifacts/scamlens-video"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/scamlens-video/" ]
+localPort = 21846
+
+[services.development]
+run = "pnpm --filter @workspace/scamlens-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/scamlens-video", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/scamlens-video/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21846"
+BASE_PATH = "/scamlens-video/"
